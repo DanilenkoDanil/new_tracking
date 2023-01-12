@@ -1,0 +1,14 @@
+[Unit]
+Description=Telegram Bot
+After=network.target
+
+[Service]
+User=user_name
+Group=user_name
+
+WorkingDirectory=/home/user_name/track_signals/
+Environment="PYTHONPATH=/home/user_name/track_signals/"
+ExecStart=/home/user_name/track_signals/venv/bin/python /home/user_name/track_signals/read.py
+
+[Install]
+WantedBy=multi-user.target
