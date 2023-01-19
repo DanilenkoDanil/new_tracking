@@ -32,7 +32,7 @@ def main():
         order = client_bin.futures_get_all_orders()[-1]
         if last_order_id != order['orderId']:
             last_order_id = order['orderId']
-            if order['status'] != 'CANCELED' and order['status'] != 'EXPIRED':
+            if order['status'] == 'FILLED' and 'STOP' in order['origType']:
                 order = client_bin.get_ticker(symbol=order['symbol'])
             else:
                 print('next 1')
