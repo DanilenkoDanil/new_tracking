@@ -28,6 +28,7 @@ def main():
     last_order_id = ''
 
     while True:
+        time.sleep(15)
         global current_symbols
         order = client_bin.futures_get_all_orders()[-1]
         if last_order_id != order['orderId']:
