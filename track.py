@@ -28,9 +28,12 @@ def main():
     last_order_id = ''
 
     while True:
-        time.sleep(15)
+        time.sleep(30)
         global current_symbols
-        order = client_bin.futures_get_all_orders()[-1]
+        try:
+            order = client_bin.futures_get_all_orders()[-1]
+        except requests.exceptions.ReadTimeout:
+            continue
         if last_order_id != order['orderId']:
             last_order_id = order['orderId']
             if order['status'] == 'FILLED' and 'STOP' in order['origType']:
