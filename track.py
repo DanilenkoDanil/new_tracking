@@ -56,7 +56,7 @@ def main():
     )
     client.start()
     for i in client.iter_dialogs():
-        if i.id == '-1001624443589':
+        if '1001624443589' in str(i.id):
             channel = i
 
     while True:
@@ -114,6 +114,6 @@ def main():
                          f'&type=short'
                          )
 
-
+# http://212.118.40.209/api/send-signal-result/?name=TESTMONEY&type=SHORT&price=1331&source=Yer&price_change=12
 if __name__ == "__main__":
     main()
