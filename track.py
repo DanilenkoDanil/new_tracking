@@ -1,14 +1,38 @@
 import time
 
 from binance.client import Client
-from try_db import User
-from try_db import get_active_target
 import requests
+from telethon.sync import TelegramClient
+from telethon.tl.functions.messages import GetHistoryRequest
 
 pub = 'NpaXMioHavvDu27dSzCsTd7VXY2x3dsrf3CZ7e705CHiVDEMfsqetMywcTwSDR2B'
 pri = 'rJmldKeCoYGAJ01nwqfG4JZDNjkJfadHUQzkt51hbyIXeIuAxG3pb6yEa2QHA4lW'
 current_symbols = []
 url = 'http://185.231.155.38'
+bd_url = 'http://212.118.40.209'
+
+
+def find_info(text: str):
+    info = dict()
+    info["source"] = text.split('#')[1].split('\n')[0]
+    info["symbol"] = text.split('#')[2].split(' ')[0]
+    info["type"] = text.split('#')[3].split('\n')[0]
+    info["entry"] = float(text.split('Entry: ')[1].split('\n')[0])
+    return info
+
+
+def find_msg(client: TelegramClient, channel,  symbol: str):
+    history = client(GetHistoryRequest(
+        peer=channel,
+        offset_id=0,
+        offset_date=None, add_offset=0,
+        limit=100, max_id=0, min_id=0,
+        hash=0))
+    messages = list(history.messages)
+    messages.reverse()
+    for message in messages:
+        if f"#{symbol.upper()}" in message.message:
+            return find_info(message.message)
 
 
 def convert_to_dict(symbols: list):
@@ -23,9 +47,17 @@ def convert_to_dict(symbols: list):
 
 
 def main():
-    db = User('db.db')
     client_bin = Client(pub, pri)
     last_order_id = ''
+    client = TelegramClient(
+        "session_for_read",
+        3566267,
+        "77c8ec3ad6b760c7d247ef4159721524",
+    )
+    client.start()
+    for i in client.iter_dialogs():
+        if i.id == '-1001624443589':
+            channel = i
 
     while True:
         time.sleep(30)
@@ -48,43 +80,39 @@ def main():
             continue
         print(current_symbols)
         try:
-            symbol_info = db.get_symbol(order['symbol'])
-            target = get_active_target([symbol_info[0], symbol_info[1], symbol_info[2]])
+            info = find_msg(client, channel, order['symbol'])
         except Exception as e:
             print(e)
             continue
-        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        print(symbol_info[5])
-        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        if symbol_info[5] == 'LONG':
+        if info['type'] == 'LONG':
             print('Long')
             print('up!!!!')
-            percent = round(float(order['lastPrice'])/float(symbol_info[4]) * 100 - 100, 2)
-            text_for_msg = f"{order['symbol']} - выполнен таргет {target[0]}, процент {percent}"
+            percent = round(float(order['lastPrice'])/float(info["entry"]) * 100 - 100, 2)
+            text_for_msg = f"{order['symbol']}, процент {percent}"
             print('test')
+            requests.get(f'{bd_url}/api/send-signal-result/?name={info["symbol"]}&type=LONG&price={order["lastPrice"]}&source={info["source"]}&price_change={percent}')
             requests.get(f'{url}/api/send-target/?message={text_for_msg}'
                          f'&id={order["symbol"]}'
                          f'&name={order["symbol"]}'
                          f'&current={float(order["lastPrice"])}'
-                         f'&old={float(symbol_info[4])}'
+                         f'&old={float(info["entry"])}'
                          f'&percent={percent}'
                          f'&type=long'
             )
-            db.delete_symbol(order['symbol'])
         else:
             print('up!!!!')
-            percent = 1 - round(float(order['lastPrice'])/float(symbol_info[4]) * 100 + 100, 2)
-            text_for_msg = f"{order['symbol']} - выполнен таргет {target[0]}, процент {percent}"
+            percent = 1 - round(float(order['lastPrice'])/float(info["entry"]) * 100 + 100, 2)
+            text_for_msg = f"{order['symbol']}, процент {percent}"
             print('test')
+            requests.get(f'{bd_url}/api/send-signal-result/?name={info["symbol"]}&type=SHORT&price={order["lastPrice"]}&source={info["source"]}&price_change={percent}')
             requests.get(f'{url}/api/send-target/?message={text_for_msg}'
                          f'&id={order["symbol"]}'
                          f'&name={order["symbol"]}'
                          f'&current={float(order["lastPrice"])}'
-                         f'&old={float(symbol_info[4])}'
+                         f'&old={float(info["entry"])}'
                          f'&percent={percent}'
                          f'&type=short'
                          )
-            db.delete_symbol(order['symbol'])
 
 
 if __name__ == "__main__":
