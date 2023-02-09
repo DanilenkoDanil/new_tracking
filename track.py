@@ -29,7 +29,6 @@ def find_msg(client: TelegramClient, channel,  symbol: str):
         limit=100, max_id=0, min_id=0,
         hash=0))
     messages = list(history.messages)
-    messages.reverse()
     for message in messages:
         if f"#{symbol.upper()}" in message.message:
             return find_info(message.message)
